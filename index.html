@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Precificador de produtos de impressão 3D para venda na Shopee." />
+  <title>VOLTEX • Precificador 3D Shopee</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-wrap">
+      <div class="brand-mark">V</div>
+      <div>
+        <div class="brand">VOLTEX</div>
+        <div class="brand-sub">Precificador 3D • Shopee</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn ghost" id="btnExportar">Exportar dados</button>
+      <button class="btn ghost" id="btnImportar">Importar dados</button>
+      <input id="inputImportar" type="file" accept="application/json" hidden />
+      <button class="btn danger-ghost" id="btnResetar">Resetar</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero card">
+      <div>
+        <p class="eyebrow">PRECIFICAÇÃO COM MARGEM REAL</p>
+        <h1>Descubra quanto cobrar por cada peça 3D na Shopee.</h1>
+        <p class="muted">Material, máquina, energia, mão de obra, embalagem, refugo, impostos, anúncios e taxas da Shopee entram no cálculo.</p>
+      </div>
+      <div class="hero-badge">
+        <span>Regra de taxas</span>
+        <strong>Referência 2026</strong>
+        <small>Parâmetros editáveis abaixo</small>
+      </div>
+    </section>
+
+    <section class="kpis" aria-label="Indicadores">
+      <article class="kpi card">
+        <span>Custo total</span>
+        <strong id="kpiCusto">R$ 0,00</strong>
+        <small>fabricação + refugo + embalagem + extras</small>
+      </article>
+      <article class="kpi card">
+        <span>Taxas Shopee</span>
+        <strong id="kpiTaxas">R$ 0,00</strong>
+        <small id="kpiTaxaEfetiva">0,0% do preço</small>
+      </article>
+      <article class="kpi card">
+        <span>Lucro líquido</span>
+        <strong id="kpiLucro">R$ 0,00</strong>
+        <small id="kpiMargem">0,0% de margem</small>
+      </article>
+      <article class="kpi card highlight">
+        <span>Preço sugerido</span>
+        <strong id="kpiSugerido">R$ 0,00</strong>
+        <small id="kpiMeta">para atingir a margem-alvo</small>
+      </article>
+    </section>
+
+    <div class="workspace">
+      <section class="card form-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">PRODUTO</p>
+            <h2>Dados da peça</h2>
+          </div>
+          <span class="status-pill neutral" id="statusProduto">INFORME O PREÇO</span>
+        </div>
+
+        <div class="grid two">
+          <label>SKU
+            <input id="sku" value="3D-001" placeholder="Ex.: 3D-001" />
+          </label>
+          <label>Produto
+            <input id="produto" value="Chaveiro personalizado" placeholder="Nome do produto" />
+          </label>
+          <label>Peso da peça (g)
+            <input id="peso" type="number" min="0" step="0.1" value="18" />
+          </label>
+          <label>Tempo de impressão (h)
+            <input id="tempo" type="number" min="0" step="0.1" value="0.6" />
+          </label>
+          <label>Pós-processamento (min)
+            <input id="pos" type="number" min="0" step="1" value="5" />
+          </label>
+          <label>Frete pago por você (R$)
+            <input id="frete" type="number" min="0" step="0.01" value="0" />
+          </label>
+          <label>Preço de venda (R$)
+            <input id="preco" class="price-input" type="number" min="0" step="0.01" value="24.90" />
+          </label>
+          <label>Outros custos desta peça (R$)
+            <input id="outrosProduto" type="number" min="0" step="0.01" value="0" />
+          </label>
+        </div>
+
+        <div class="breakdown">
+          <h3>Composição do custo</h3>
+          <div class="breakdown-row"><span>Filamento</span><strong id="bMaterial">R$ 0,00</strong></div>
+          <div class="breakdown-row"><span>Energia</span><strong id="bEnergia">R$ 0,00</strong></div>
+          <div class="breakdown-row"><span>Máquina / depreciação</span><strong id="bManutencao">R$ 0,00</strong></div>
+          <div class="breakdown-row"><span>Mão de obra</span><strong id="bMaoObra">R$ 0,00</strong></div>
+          <div class="breakdown-row"><span>Refugo + embalagem + extras</span><strong id="bExtras">R$ 0,00</strong></div>
+          <div class="breakdown-row total"><span>Custo total unitário</span><strong id="bTotal">R$ 0,00</strong></div>
+        </div>
+      </section>
+
+      <aside class="card config-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">CONFIGURAÇÕES</p>
+            <h2>Custos e metas</h2>
+          </div>
+          <button class="text-btn" id="btnPadrao">Restaurar padrão</button>
+        </div>
+
+        <div class="grid two compact">
+          <label>Filamento (R$/kg)
+            <input id="filamento" type="number" min="0" step="0.01" value="89" />
+          </label>
+          <label>Energia (R$/kWh)
+            <input id="energia" type="number" min="0" step="0.01" value="1" />
+          </label>
+          <label>Potência média (W)
+            <input id="potencia" type="number" min="0" step="1" value="120" />
+          </label>
+          <label>Mão de obra (R$/h)
+            <input id="maoObra" type="number" min="0" step="0.01" value="15" />
+          </label>
+          <label>Máquina / depreciação (R$/h)
+            <input id="depreciacao" type="number" min="0" step="0.01" value="1.5" />
+          </label>
+          <label>Refugo / falhas (%)
+            <input id="refugo" type="number" min="0" max="100" step="0.1" value="8" />
+          </label>
+          <label>Embalagem (R$/item)
+            <input id="embalagem" type="number" min="0" step="0.01" value="2.5" />
+          </label>
+          <label>Outros custos padrão (R$)
+            <input id="outrosPadrao" type="number" min="0" step="0.01" value="0" />
+          </label>
+          <label>Impostos (% venda)
+            <input id="impostos" type="number" min="0" max="100" step="0.1" value="0" />
+          </label>
+          <label>Shopee Ads (%)
+            <input id="ads" type="number" min="0" max="100" step="0.1" value="0" />
+          </label>
+          <label>Reserva perdas (%)
+            <input id="perdas" type="number" min="0" max="100" step="0.1" value="2" />
+          </label>
+          <label>Margem líquida desejada (%)
+            <input id="margem" type="number" min="0" max="90" step="0.1" value="25" />
+          </label>
+        </div>
+
+        <label class="full">Tipo de vendedor
+          <select id="tipoVendedor">
+            <option value="CNPJ" selected>CNPJ / CPF padrão</option>
+            <option value="CPF_HV">CPF &gt; 450 pedidos / 90 dias</option>
+          </select>
+        </label>
+
+        <details class="fees-box">
+          <summary>Ver regras Shopee usadas no cálculo</summary>
+          <div class="fees-table-wrap">
+            <table>
+              <thead><tr><th>Preço</th><th>Comissão</th><th>Tarifa base</th></tr></thead>
+              <tbody>
+                <tr><td>&lt; R$ 8</td><td>20%</td><td>50% do preço</td></tr>
+                <tr><td>R$ 8–79,99</td><td>20%</td><td>R$ 4</td></tr>
+                <tr><td>R$ 80–99,99</td><td>14%</td><td>R$ 16</td></tr>
+                <tr><td>R$ 100–199,99</td><td>14%</td><td>R$ 20</td></tr>
+                <tr><td>≥ R$ 200</td><td>14%</td><td>R$ 26</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="tiny">CPF acima de 450 pedidos/90 dias: adicional de R$ 3; abaixo de R$ 12, o modelo usa adicional regressivo de 25% do preço, conforme a planilha original.</p>
+        </details>
+      </aside>
+    </div>
+
+    <section class="card analysis-card">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">ANÁLISE</p>
+          <h2>Resultado da venda</h2>
+        </div>
+        <button class="btn primary" id="btnAplicarSugerido">Usar preço sugerido</button>
+      </div>
+      <div class="analysis-grid">
+        <div class="metric-line"><span>Preço de venda</span><strong id="rPreco">R$ 0,00</strong></div>
+        <div class="metric-line"><span>Custo total unitário</span><strong id="rCusto">R$ 0,00</strong></div>
+        <div class="metric-line"><span>Comissão Shopee</span><strong id="rComissao">R$ 0,00</strong></div>
+        <div class="metric-line"><span>Tarifa fixa/base Shopee</span><strong id="rTarifa">R$ 0,00</strong></div>
+        <div class="metric-line"><span>Adicional CPF</span><strong id="rCpf">R$ 0,00</strong></div>
+        <div class="metric-line"><span>Impostos + Ads + perdas</span><strong id="rVariaveis">R$ 0,00</strong></div>
+        <div class="metric-line emph"><span>Lucro líquido por unidade</span><strong id="rLucro">R$ 0,00</strong></div>
+        <div class="metric-line emph"><span>Margem líquida</span><strong id="rMargem">0,0%</strong></div>
+      </div>
+      <div class="recommendation" id="recommendation"></div>
+    </section>
+
+    <section class="card products-card">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">CATÁLOGO</p>
+          <h2>Produtos salvos</h2>
+        </div>
+        <button class="btn primary" id="btnSalvarProduto">Salvar / atualizar produto</button>
+      </div>
+      <div class="table-wrap">
+        <table id="productsTable">
+          <thead>
+            <tr>
+              <th>SKU</th><th>Produto</th><th>Preço</th><th>Custo</th><th>Taxas</th><th>Lucro</th><th>Margem</th><th>Sugerido</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="emptyProducts">Nenhum produto salvo ainda.</div>
+    </section>
+
+    <footer>
+      <p>VOLTEX • Precificador 3D Shopee</p>
+      <p class="tiny">As taxas podem ser alteradas pela Shopee. Valide as regras no Seller Center antes de publicar preços.</p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
