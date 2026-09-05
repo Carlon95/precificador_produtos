@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Precificador de produtos de impressão 3D para venda na Shopee." />
   <title>VOLTEX • Precificador 3D Shopee</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="shortcut icon" href="assets/favicon.ico" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,13 +16,11 @@
 <body>
   <header class="topbar">
     <div class="brand-wrap">
-      <div class="brand-mark">V</div>
-      <div>
-        <div class="brand">VOLTEX</div>
-        <div class="brand-sub">Precificador 3D • Shopee</div>
-      </div>
+      <img class="brand-logo" src="assets/voltex-logo.png" alt="VOLTEX" />
+      <div class="brand-sub">Precificador 3D • Shopee</div>
     </div>
     <div class="top-actions">
+      <button class="btn ghost" id="btnCalculadora" type="button">🧮 Calculadora</button>
       <button class="btn ghost" id="btnExportar">Exportar dados</button>
       <button class="btn ghost" id="btnImportar">Importar dados</button>
       <input id="inputImportar" type="file" accept="application/json" hidden />
@@ -233,6 +234,70 @@
       <p class="tiny">As taxas podem ser alteradas pela Shopee. Valide as regras no Seller Center antes de publicar preços.</p>
     </footer>
   </main>
+
+
+  <button class="calc-fab" id="btnCalculadoraMobile" type="button" aria-label="Abrir calculadora">🧮</button>
+
+  <div class="calc-overlay" id="calcOverlay" hidden>
+    <section class="calculator-panel" role="dialog" aria-modal="true" aria-labelledby="calcTitle">
+      <div class="calculator-head">
+        <div>
+          <p class="eyebrow">FERRAMENTA RÁPIDA</p>
+          <h2 id="calcTitle">Calculadora</h2>
+        </div>
+        <button class="calc-close" id="btnFecharCalculadora" type="button" aria-label="Fechar calculadora">×</button>
+      </div>
+
+      <div class="calculator-display-wrap" aria-live="polite">
+        <div class="calculator-history" id="calcHistory">Pronta para calcular</div>
+        <output class="calculator-display" id="calcDisplay">0</output>
+      </div>
+
+      <div class="calculator-grid" id="calcKeypad" aria-label="Teclado da calculadora">
+        <button type="button" class="calc-key utility" data-action="clear">C</button>
+        <button type="button" class="calc-key utility" data-action="backspace" aria-label="Apagar último dígito">⌫</button>
+        <button type="button" class="calc-key utility" data-action="percent">%</button>
+        <button type="button" class="calc-key operator" data-operator="/">÷</button>
+
+        <button type="button" class="calc-key" data-digit="7">7</button>
+        <button type="button" class="calc-key" data-digit="8">8</button>
+        <button type="button" class="calc-key" data-digit="9">9</button>
+        <button type="button" class="calc-key operator" data-operator="*">×</button>
+
+        <button type="button" class="calc-key" data-digit="4">4</button>
+        <button type="button" class="calc-key" data-digit="5">5</button>
+        <button type="button" class="calc-key" data-digit="6">6</button>
+        <button type="button" class="calc-key operator" data-operator="-">−</button>
+
+        <button type="button" class="calc-key" data-digit="1">1</button>
+        <button type="button" class="calc-key" data-digit="2">2</button>
+        <button type="button" class="calc-key" data-digit="3">3</button>
+        <button type="button" class="calc-key operator" data-operator="+">+</button>
+
+        <button type="button" class="calc-key utility" data-action="sign">±</button>
+        <button type="button" class="calc-key" data-digit="0">0</button>
+        <button type="button" class="calc-key" data-action="decimal">,</button>
+        <button type="button" class="calc-key equals" data-action="equals">=</button>
+      </div>
+
+      <div class="calculator-apply">
+        <label>Aplicar resultado em
+          <select id="calcTarget">
+            <option value="preco">Preço de venda</option>
+            <option value="outrosProduto">Outros custos desta peça</option>
+            <option value="frete">Frete pago por você</option>
+            <option value="filamento">Filamento (R$/kg)</option>
+            <option value="embalagem">Embalagem (R$/item)</option>
+            <option value="maoObra">Mão de obra (R$/h)</option>
+            <option value="depreciacao">Máquina / depreciação (R$/h)</option>
+            <option value="energia">Energia (R$/kWh)</option>
+          </select>
+        </label>
+        <button class="btn primary calc-apply-btn" id="btnAplicarCalculadora" type="button">Aplicar resultado</button>
+      </div>
+      <p class="calculator-note" id="calcApplyStatus">Você também pode usar o teclado: números, +, −, ×, ÷, Enter, Backspace e Esc.</p>
+    </section>
+  </div>
 
   <script src="app.js"></script>
 </body>

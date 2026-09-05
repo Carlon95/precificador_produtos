@@ -222,3 +222,255 @@ loadState(); calculate(); renderProducts();
 
 // Exposto apenas para testes locais.
 window.__pricing = { feeParts, costParts, evaluateAtPrice, suggestedPrice };
+
+
+// ---------- Calculadora integrada ----------
+const calcState = {
+  current: '0',
+  stored: null,
+  operator: null,
+  waiting: false,
+  error: false
+};
+
+const calcSymbols = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+
+function calcFormatValue(value) {
+  if (!Number.isFinite(value)) return 'Erro';
+  const abs = Math.abs(value);
+  if ((abs >= 1e12 || (abs > 0 && abs < 1e-8))) {
+    return value.toExponential(8).replace('.', ',');
+  }
+  const rounded = Math.round((value + Number.EPSILON) * 1e10) / 1e10;
+  return new Intl.NumberFormat('pt-BR', {
+    maximumFractionDigits: 10,
+    useGrouping: true
+  }).format(rounded);
+}
+
+function calcNumber() {
+  const n = Number(calcState.current);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function calcRender(historyText) {
+  $('calcDisplay').textContent = calcState.error ? 'Erro' : calcFormatValue(calcNumber());
+  if (typeof historyText === 'string') $('calcHistory').textContent = historyText;
+}
+
+function calcReset() {
+  calcState.current = '0';
+  calcState.stored = null;
+  calcState.operator = null;
+  calcState.waiting = false;
+  calcState.error = false;
+  calcRender('Pronta para calcular');
+}
+
+function calcStartFreshIfError() {
+  if (!calcState.error) return;
+  calcReset();
+}
+
+function calcInputDigit(digit) {
+  calcStartFreshIfError();
+  if (calcState.waiting) {
+    calcState.current = digit;
+    calcState.waiting = false;
+  } else if (calcState.current === '0') {
+    calcState.current = digit;
+  } else if (calcState.current.length < 16) {
+    calcState.current += digit;
+  }
+  calcRender();
+}
+
+function calcDecimal() {
+  calcStartFreshIfError();
+  if (calcState.waiting) {
+    calcState.current = '0.';
+    calcState.waiting = false;
+  } else if (!calcState.current.includes('.')) {
+    calcState.current += '.';
+  }
+  calcRender();
+}
+
+function calcCompute(a, b, op) {
+  if (op === '+') return a + b;
+  if (op === '-') return a - b;
+  if (op === '*') return a * b;
+  if (op === '/') return b === 0 ? NaN : a / b;
+  return b;
+}
+
+function calcChooseOperator(nextOperator) {
+  calcStartFreshIfError();
+  const input = calcNumber();
+
+  if (calcState.operator && calcState.waiting) {
+    calcState.operator = nextOperator;
+    calcRender(`${calcFormatValue(calcState.stored)} ${calcSymbols[nextOperator]}`);
+    return;
+  }
+
+  if (calcState.stored === null) {
+    calcState.stored = input;
+  } else if (calcState.operator) {
+    const result = calcCompute(calcState.stored, input, calcState.operator);
+    if (!Number.isFinite(result)) {
+      calcState.error = true;
+      calcRender('Não é possível dividir por zero');
+      return;
+    }
+    calcState.stored = result;
+    calcState.current = String(result);
+  }
+
+  calcState.operator = nextOperator;
+  calcState.waiting = true;
+  calcRender(`${calcFormatValue(calcState.stored)} ${calcSymbols[nextOperator]}`);
+}
+
+function calcEquals() {
+  if (calcState.error || calcState.operator === null || calcState.stored === null) return;
+  const b = calcNumber();
+  const a = calcState.stored;
+  const op = calcState.operator;
+  const result = calcCompute(a, b, op);
+
+  if (!Number.isFinite(result)) {
+    calcState.error = true;
+    calcRender('Não é possível dividir por zero');
+    return;
+  }
+
+  calcState.current = String(result);
+  calcState.stored = null;
+  calcState.operator = null;
+  calcState.waiting = true;
+  calcRender(`${calcFormatValue(a)} ${calcSymbols[op]} ${calcFormatValue(b)} =`);
+}
+
+function calcPercent() {
+  calcStartFreshIfError();
+  calcState.current = String(calcNumber() / 100);
+  calcState.waiting = false;
+  calcRender('Percentual convertido para decimal');
+}
+
+function calcToggleSign() {
+  calcStartFreshIfError();
+  calcState.current = String(calcNumber() * -1);
+  calcRender();
+}
+
+function calcBackspace() {
+  calcStartFreshIfError();
+  if (calcState.waiting) return;
+  const negative = calcState.current.startsWith('-');
+  const raw = negative ? calcState.current.slice(1) : calcState.current;
+  if (raw.length <= 1) calcState.current = '0';
+  else calcState.current = (negative ? '-' : '') + raw.slice(0, -1);
+  if (calcState.current === '-0') calcState.current = '0';
+  calcRender();
+}
+
+function calcOpen() {
+  $('calcOverlay').hidden = false;
+  document.body.classList.add('calc-open');
+  $('calcApplyStatus').className = 'calculator-note';
+  $('calcApplyStatus').textContent = 'Você também pode usar o teclado: números, +, −, ×, ÷, Enter, Backspace e Esc.';
+  setTimeout(() => $('btnFecharCalculadora').focus(), 0);
+}
+
+function calcClose() {
+  $('calcOverlay').hidden = true;
+  document.body.classList.remove('calc-open');
+}
+
+function calcApplyResult() {
+  if (calcState.error) return;
+  const targetId = $('calcTarget').value;
+  const target = $(targetId);
+  const value = calcNumber();
+
+  if (!target || !Number.isFinite(value)) {
+    $('calcApplyStatus').className = 'calculator-note error';
+    $('calcApplyStatus').textContent = 'Não foi possível aplicar este resultado.';
+    return;
+  }
+
+  const step = target.getAttribute('step') || '0.01';
+  const decimals = step.includes('.') ? step.split('.')[1].length : 0;
+  target.value = value.toFixed(Math.min(decimals, 6));
+  target.dispatchEvent(new Event('input', { bubbles:true }));
+  calculate();
+
+  const option = $('calcTarget').selectedOptions[0];
+  $('calcApplyStatus').className = 'calculator-note success';
+  $('calcApplyStatus').textContent = `Resultado aplicado em “${option ? option.textContent : targetId}”.`;
+}
+
+$('btnCalculadora').addEventListener('click', calcOpen);
+$('btnCalculadoraMobile').addEventListener('click', calcOpen);
+$('btnFecharCalculadora').addEventListener('click', calcClose);
+$('btnAplicarCalculadora').addEventListener('click', calcApplyResult);
+$('calcOverlay').addEventListener('click', (event) => {
+  if (event.target === $('calcOverlay')) calcClose();
+});
+
+$('calcKeypad').addEventListener('click', (event) => {
+  const button = event.target.closest('button');
+  if (!button) return;
+
+  if (button.dataset.digit !== undefined) {
+    calcInputDigit(button.dataset.digit);
+    return;
+  }
+  if (button.dataset.operator) {
+    calcChooseOperator(button.dataset.operator);
+    return;
+  }
+
+  const action = button.dataset.action;
+  if (action === 'clear') calcReset();
+  else if (action === 'backspace') calcBackspace();
+  else if (action === 'percent') calcPercent();
+  else if (action === 'sign') calcToggleSign();
+  else if (action === 'decimal') calcDecimal();
+  else if (action === 'equals') calcEquals();
+});
+
+document.addEventListener('keydown', (event) => {
+  if ($('calcOverlay').hidden) return;
+
+  const key = event.key;
+  if (/^\d$/.test(key)) {
+    event.preventDefault();
+    calcInputDigit(key);
+  } else if (key === '.' || key === ',') {
+    event.preventDefault();
+    calcDecimal();
+  } else if (['+', '-', '*', '/'].includes(key)) {
+    event.preventDefault();
+    calcChooseOperator(key);
+  } else if (key === 'Enter' || key === '=') {
+    event.preventDefault();
+    calcEquals();
+  } else if (key === 'Backspace') {
+    event.preventDefault();
+    calcBackspace();
+  } else if (key === 'Escape') {
+    event.preventDefault();
+    calcClose();
+  } else if (key === '%') {
+    event.preventDefault();
+    calcPercent();
+  } else if (key.toLowerCase() === 'c') {
+    event.preventDefault();
+    calcReset();
+  }
+});
+
+calcReset();
